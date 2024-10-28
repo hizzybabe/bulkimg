@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Image Generation Prompts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Image Prompt Generator</h1>
+        <div class="input-section">
+            <input type="text" id="keyword" placeholder="Enter a keyword (e.g., cybersecurity)">
+            <button onclick="generatePrompts()">Generate Prompts</button>
+        </div>
+        <div id="loading" class="loading hidden">Generating prompts...</div>
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        async function generatePrompts() {
+            const keyword = document.getElementById('keyword').value;
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            if (!keyword) {
+                alert('Please enter a keyword');
+                return;
+            }
+
+            loading.classList.remove('hidden');
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ keyword }),
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                results.innerHTML = data.prompts
+                    .map((prompt, index) => `
+                        <div class="prompt-card">
+                            <div class="prompt-number">${index + 1}</div>
+                            <p>${prompt}</p>
+                            <button onclick="copyToClipboard(this)" data-prompt="${prompt}">
+                                Copy
+                            </button>
+                        </div>
+                    `)
+                    .join('');
+            } catch (error) {
+                results.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function copyToClipboard(button) {
+            const prompt = button.getAttribute('data-prompt');
+            navigator.clipboard.writeText(prompt);
+            
+            const originalText = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
+
